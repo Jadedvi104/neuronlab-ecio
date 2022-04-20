@@ -30,6 +30,13 @@ contract NeuronLab is Ownable {
     uint256 constant PC_RESERVED1 = 1;
     uint256 constant PC_RESERVED2 = 0;
 
+    uint256 constant ZERO_STAR = 0;
+    uint256 constant ONE_STAR = 1;
+    uint256 constant TWO_STAR = 2;
+    uint256 constant THREE_STAR = 3;
+    uint256 constant FOUR_STAR = 4;
+    uint256 constant FIVE_STAR = 5;
+
     IECIONFT public NFTCore;
     IERC20 public ECIO_TOKEN;
 
@@ -72,14 +79,16 @@ contract NeuronLab is Ownable {
         return result;
     }
 
-    function calculatePercent() public view returns (uint256) {
-        
+    function compareStar(uint256[] memory tokenIds) public view returns (uint256) {
 
+    }
+
+    function calculatePercent() public view returns (uint256) {
     }
 
     function addSwToForge() public {}
 
-    function gatherMaterials(uint256[] memory tokenId)
+    function gatherMaterials(uint256[] memory tokenIds)
         internal
         view
         returns (uint256[] memory)
