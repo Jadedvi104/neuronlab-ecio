@@ -72,11 +72,17 @@ contract NeuronLab is Ownable {
         return result;
     }
 
-    function gatherSW(uint256[] memory tokenId) internal view returns (uint256[] memory) {
+    function addSwToForge() public {}
+
+    function gatherMaterials(uint256[] memory tokenId)
+        internal
+        view
+        returns (uint256[] memory)
+    {
         string memory partCode;
         uint256 id;
-       ( ,id) = NFTCore.tokenInfo(tokenId[0]);
-       uint256 rarity = checkUserRarity();
+        (, id) = NFTCore.tokenInfo(tokenId[0]);
+        uint256 rarity = checkUserRarity();
     }
 
     function upgradeTier(uint256 tokenId) external {}
