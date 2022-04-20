@@ -72,6 +72,11 @@ contract NeuronLab is Ownable {
         return result;
     }
 
+    function calculatePercent() public view returns (uint256) {
+        
+
+    }
+
     function addSwToForge() public {}
 
     function gatherMaterials(uint256[] memory tokenId)
