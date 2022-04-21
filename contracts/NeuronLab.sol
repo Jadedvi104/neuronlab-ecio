@@ -30,12 +30,12 @@ contract NeuronLab is Ownable {
     uint256 constant PC_RESERVED1 = 1;
     uint256 constant PC_RESERVED2 = 0;
 
-    uint256 constant ZERO_STAR = 0;
-    uint256 constant ONE_STAR = 1;
-    uint256 constant TWO_STAR = 2;
-    uint256 constant THREE_STAR = 3;
-    uint256 constant FOUR_STAR = 4;
-    uint256 constant FIVE_STAR = 5;
+    string constant ZERO_STAR = "00";
+    string constant ONE_STAR = "01";
+    string constant TWO_STAR = "02";
+    string constant THREE_STAR = "03";
+    string constant FOUR_STAR = "04";
+    string constant FIVE_STAR = "05";
 
     IECIONFT public NFTCore;
     IERC20 public ECIO_TOKEN;
@@ -79,12 +79,42 @@ contract NeuronLab is Ownable {
         return result;
     }
 
-    function compareStar(uint256[] memory tokenIds) public view returns (uint256) {
-
+    function compareStrings(string memory a, string memory b)
+        public
+        pure
+        returns (bool)
+    {
+        return (keccak256(abi.encodePacked((a))) ==
+            keccak256(abi.encodePacked((b))));
     }
 
-    function calculatePercent() public view returns (uint256) {
+    function compareStar(uint256 tokenIds) public view returns (string memory) {
+        string memory partCode;
+        uint256 id;
+        (partCode, id) = NFTCore.tokenInfo(tokenIds);
+
+        if (compareStrings(ONE_STAR, checkUserStars(partCode)) == true) {
+            return ONE_STAR;
+        }
+        
+        if (compareStrings(TWO_STAR, checkUserStars(partCode)) == true) {
+            return TWO_STAR;
+        }
+
+        if (compareStrings(THREE_STAR, checkUserStars(partCode)) == true) {
+            return THREE_STAR;
+        }
+        if (compareStrings(FOUR_STAR, checkUserStars(partCode)) == true) {
+            return FOUR_STAR;
+        }
+        if (compareStrings(FIVE_STAR, checkUserStars(partCode)) == true) {
+            return FIVE_STAR;
+        }
+
+        return ZERO_STAR;
     }
+
+    function calculatePercent() public view returns (uint256) {}
 
     function addSwToForge() public {}
 
@@ -92,12 +122,7 @@ contract NeuronLab is Ownable {
         internal
         view
         returns (uint256[] memory)
-    {
-        string memory partCode;
-        uint256 id;
-        (, id) = NFTCore.tokenInfo(tokenId[0]);
-        uint256 rarity = checkUserRarity();
-    }
+    {}
 
     function upgradeTier(uint256 tokenId) external {}
 
