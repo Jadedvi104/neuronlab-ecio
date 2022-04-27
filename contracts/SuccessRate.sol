@@ -30,24 +30,6 @@ contract SuccessRate is Ownable {
     function initial() public onlyOwner {
         //------------------------ STARS TIER PROBABILITY ------------------------------\\
 
-        
-        // oneStarPercent[TWO_CARD] = 10000;
-
-        // twoStarPercent[ONE_CARD] = 3500;
-        // twoStarPercent[TWO_CARD] = 7000;
-        // twoStarPercent[THREE_CARD] = 10000;
-
-        // fourStarPercent[ONE_CARD] = 2500;
-        // fourStarPercent[TWO_CARD] = 5000;
-        // fourStarPercent[THREE_CARD] = 7500;
-        // fourStarPercent[FOUR_CARD] = 10000;
-
-        // fiveStarPercent[ONE_CARD] = 2000;
-        // fiveStarPercent[TWO_CARD] = 4000;
-        // fiveStarPercent[THREE_CARD] = 6000;
-        // fiveStarPercent[FOUR_CARD] = 8000;
-        // fiveStarPercent[FIVE_CARD] = 10000;
-
 
 
         //------------------ ONE STAR ----------------\\
@@ -69,7 +51,7 @@ contract SuccessRate is Ownable {
             }
         }
 
-        // ONE_STAR + TWO_CARD = 50%
+        // ONE_STAR + TWO_CARD = 100%
         SWPoolResults[ONE_STAR][TWO_CARD] = [0];
         SWPoolPercentage[ONE_STAR][TWO_CARD] = [uint256(10000)];
         SWPoolValues[ONE_STAR][TWO_CARD] = [SUCCEEDED];
@@ -245,7 +227,7 @@ contract SuccessRate is Ownable {
             }
         }
 
-        // FOUR_CARD + FIVE_CARD = 100%
+        // FOUR_STAR + FIVE_CARD = 100%
         SWPoolResults[FOUR_STAR][FIVE_CARD] = [0];
         SWPoolPercentage[FOUR_STAR][FIVE_CARD] = [uint256(10000)];
         SWPoolValues[FOUR_STAR][FIVE_CARD] = [SUCCEEDED];
@@ -253,7 +235,7 @@ contract SuccessRate is Ownable {
         //-----------------END COMMON BOX RATE --------------------------------
     }
 
-    function getSpaceWarriorPool(
+    function getResultPool(
         uint16 starNum,
         uint16 cardNum,
         uint16 _number

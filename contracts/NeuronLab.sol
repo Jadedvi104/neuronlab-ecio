@@ -20,6 +20,14 @@ interface IECIONFT {
     function safeMint(address _to, string memory partCode) external;
 }
 
+interface IRANDOM {
+    function getResultPool(
+        uint16 starNum,
+        uint16 cardNum,
+        uint16 _number
+    ) external view returns (uint16);
+}
+
 contract NeuronLab is Ownable {
     //Part Code Index
     uint256 constant PC_NFT_TYPE = 12;
@@ -59,6 +67,7 @@ contract NeuronLab is Ownable {
 
     IECIONFT public NFTCore;
     IERC20 public ECIO_TOKEN;
+    IRANDOM public RANDOM_CA;
 
     //Setup ECIO Token Address
     function setupEcioToken(address ecioTokenAddr) public onlyOwner {
@@ -69,6 +78,12 @@ contract NeuronLab is Ownable {
     function setupNFTCore(IECIONFT nftCore) public onlyOwner {
         NFTCore = nftCore;
     }
+
+    //Setup NFTcore address
+    function setupRandomCa(IRANDOM randomCa) public onlyOwner {
+        RANDOM_CA = randomCa;
+    }
+
 
     //Setup NFTcore address
     function setupRate(uint256 newRate) public onlyOwner {
@@ -208,12 +223,6 @@ contract NeuronLab is Ownable {
         string memory mainCardStar = splitPartcodeStar(mainCardPart);
 
         upgradeSW(mainCardStar, mainCardPart);
-    }
-
-    function calChancePercent(uint32 mainCardRarity, uint256[] memory tokenIds)
-        internal
-    {
-        
     }
 
     function burnAndCheckToken(uint32 mainCardRarity, uint256[] memory tokenIds)
