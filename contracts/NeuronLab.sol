@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 interface IECIONFT {
     function tokenInfo(uint256 _tokenId)
@@ -22,7 +21,6 @@ interface IECIONFT {
 }
 
 contract NeuronLab is Ownable {
-    using Strings for string;
     //Part Code Index
     uint256 constant PC_NFT_TYPE = 12;
     uint256 constant PC_KINGDOM = 11;
@@ -53,7 +51,8 @@ contract NeuronLab is Ownable {
     string constant FOUR_STAR = "04";
     string constant FIVE_STAR = "05";
 
-    uint256 public rate;
+    //rate being charged to upgrade stars
+    uint256 public upgradeRate;
 
     //Mapping to check Genom Rarity
     mapping(string => uint32) public genomRarity;
@@ -73,7 +72,7 @@ contract NeuronLab is Ownable {
 
     //Setup NFTcore address
     function setupRate(uint256 newRate) public onlyOwner {
-        rate = newRate;
+        upgradeRate = newRate;
     }
 
     //Compare 2 strings
@@ -101,18 +100,18 @@ contract NeuronLab is Ownable {
     //Get user Genomic Partcode and then split the code to check Genomic Rarity
     function checkUserGenomRarity(string memory genomPart)
         public
-        pure
+        view
         returns (uint32)
     {
-        if (genomRarity.genomPart == GENOME_COMMON) {
+        if (genomRarity[genomPart] == GENOME_COMMON) {
             return GENOME_COMMON;
-        } else if (genomRarity.genomPart == GENOME_RARE) {
+        } else if (genomRarity[genomPart] == GENOME_RARE) {
             return GENOME_RARE;
-        } else if (genomRarity.genomPart == GENOME_EPIC) {
+        } else if (genomRarity[genomPart] == GENOME_EPIC) {
             return GENOME_EPIC;
-        } else if (genomRarity.genomPart == GENOME_LEGENDARY) {
+        } else if (genomRarity[genomPart] == GENOME_LEGENDARY) {
             return GENOME_LEGENDARY;
-        } else if (genomRarity.genomPart == GENOME_LIMITED) {
+        } else if (genomRarity[genomPart] == GENOME_LIMITED) {
             return GENOME_LIMITED;
         } else {
             return 999; // need to change this
@@ -194,32 +193,97 @@ contract NeuronLab is Ownable {
         external
     {
         require(
-            ECIO_TOKEN.balanceOf(msg.sender) >= rate,
+            ECIO_TOKEN.balanceOf(msg.sender) >= upgradeRate,
             "Token: your token is not enough"
         );
 
         string memory mainCardPart;
         (mainCardPart, ) = NFTCore.tokenInfo(mainCardTokenId);
         string memory mainCardGenom = splitGenom(mainCardPart);
+        uint32 mainCardRarity = checkUserGenomRarity(mainCardGenom);
 
-        for (uint32 i = 0; i < tokenIds.length; i++) {
-            string memory tokenIdPart;
-            (tokenIdPart, ) = NFTCore.tokenInfo(tokenIds[i]);
-            require(
-                NFTCore.ownerOf(tokenIds[i]) == msg.sender,
-                "Ownership: you are not the owner"
-            );
-            require(
-                compareStrings(mainCardGenom, tokenIdPart) == true,
-                "Genomic: Genomic is not the same as main Card"
-            );
-
-            NFTCore.burn(tokenIds[i]);
-        }
+        burnAndCheckToken(mainCardRarity, tokenIds);
 
         //get to know main part code star
         string memory mainCardStar = splitPartcodeStar(mainCardPart);
 
+        upgradeSW(mainCardStar, mainCardPart);
+    }
+
+    function calChancePercent(uint32 mainCardRarity, uint256[] memory tokenIds)
+        internal
+    {
+        
+    }
+
+    function burnAndCheckToken(uint32 mainCardRarity, uint256[] memory tokenIds)
+        internal
+    {
+        if (mainCardRarity == GENOME_COMMON || mainCardRarity == GENOME_RARE) {
+            for (uint32 i = 0; i < tokenIds.length; i++) {
+                string memory tokenIdPart;
+                (tokenIdPart, ) = NFTCore.tokenInfo(tokenIds[i]);
+                string memory tokenIdsGenom = splitGenom(tokenIdPart);
+                uint32 tokenIdsRarity = checkUserGenomRarity(tokenIdsGenom);
+
+                require(
+                    NFTCore.ownerOf(tokenIds[i]) == msg.sender,
+                    "Ownership: you are not the owner"
+                );
+
+                require(
+                    tokenIdsRarity == GENOME_COMMON,
+                    "Rarity: your meterial must be common"
+                );
+
+                NFTCore.burn(tokenIds[i]);
+            }
+        } else if (
+            mainCardRarity == GENOME_LIMITED || mainCardRarity == GENOME_EPIC
+        ) {
+            for (uint32 i = 0; i < tokenIds.length; i++) {
+                string memory tokenIdPart;
+                (tokenIdPart, ) = NFTCore.tokenInfo(tokenIds[i]);
+                string memory tokenIdsGenom = splitGenom(tokenIdPart);
+                uint32 tokenIdsRarity = checkUserGenomRarity(tokenIdsGenom);
+
+                require(
+                    NFTCore.ownerOf(tokenIds[i]) == msg.sender,
+                    "Ownership: you are not the owner"
+                );
+
+                require(
+                    tokenIdsRarity == GENOME_RARE,
+                    "Rarity: your meterial must be common"
+                );
+
+                NFTCore.burn(tokenIds[i]);
+            }
+        } else if (mainCardRarity == GENOME_LEGENDARY) {
+            for (uint32 i = 0; i < tokenIds.length; i++) {
+                string memory tokenIdPart;
+                (tokenIdPart, ) = NFTCore.tokenInfo(tokenIds[i]);
+                string memory tokenIdsGenom = splitGenom(tokenIdPart);
+                uint32 tokenIdsRarity = checkUserGenomRarity(tokenIdsGenom);
+
+                require(
+                    NFTCore.ownerOf(tokenIds[i]) == msg.sender,
+                    "Ownership: you are not the owner"
+                );
+
+                require(
+                    tokenIdsRarity == GENOME_EPIC,
+                    "Rarity: your meterial must be common"
+                );
+
+                NFTCore.burn(tokenIds[i]);
+            }
+        }
+    }
+
+    function upgradeSW(string memory mainCardStar, string memory mainCardPart)
+        internal
+    {
         // Upgrade from 0 Star to 1 star
         if (compareStrings(mainCardStar, ZERO_STAR) == true) {
             // split part code
@@ -242,7 +306,7 @@ contract NeuronLab is Ownable {
             );
 
             NFTCore.safeMint(msg.sender, partCode);
-        } else if ( compareStrings(mainCardStar, ONE_STAR) == true) {
+        } else if (compareStrings(mainCardStar, ONE_STAR) == true) {
             // split part code
             string[] memory splittedPartCode = splitPartCode(mainCardPart);
             // change part code
