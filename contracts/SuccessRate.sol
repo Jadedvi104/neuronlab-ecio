@@ -235,7 +235,7 @@ contract SuccessRate is Ownable {
         //-----------------END COMMON BOX RATE --------------------------------
     }
 
-    function getResultPool(
+    function getSuccessRate(
         uint16 starNum,
         uint16 cardNum,
         uint16 _number

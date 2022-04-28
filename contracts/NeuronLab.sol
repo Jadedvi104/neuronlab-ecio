@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./Helper.sol";
 
 interface IECIONFT {
     function tokenInfo(uint256 _tokenId)
@@ -20,8 +21,12 @@ interface IECIONFT {
     function safeMint(address _to, string memory partCode) external;
 }
 
-interface IRANDOM {
-    function getResultPool(
+interface RANDOM_CONTRACT {
+    function startRandom() external returns (uint256);
+}
+
+interface ISUCCSRATE {
+    function getSuccessRate(
         uint16 starNum,
         uint16 cardNum,
         uint16 _number
@@ -51,13 +56,24 @@ contract NeuronLab is Ownable {
     uint32 constant GENOME_LEGENDARY = 3;
     uint32 constant GENOME_LIMITED = 4;
 
-    //Stars tier
+    //Stars tier string
     string constant ZERO_STAR = "00";
     string constant ONE_STAR = "01";
     string constant TWO_STAR = "02";
     string constant THREE_STAR = "03";
     string constant FOUR_STAR = "04";
     string constant FIVE_STAR = "05";
+
+    //Star
+    uint16 private constant ZEO_STAR_UINT = 0;
+    uint16 private constant ONE_STAR_UINT = 1;
+    uint16 private constant TWO_STAR_UINT = 2;
+    uint16 private constant THREE_STAR_UINT = 3;
+    uint16 private constant FOUR_STAR_UINT = 4;
+
+    //FAILED OR SUCCESS
+    uint16 private constant SUCCEEDED = 0;
+    uint16 private constant FAILED = 1;
 
     //rate being charged to upgrade stars
     uint256 public upgradeRate;
@@ -67,7 +83,8 @@ contract NeuronLab is Ownable {
 
     IECIONFT public NFTCore;
     IERC20 public ECIO_TOKEN;
-    IRANDOM public RANDOM_CA;
+    ISUCCSRATE public SUCCESSRATE;
+    RANDOM_CONTRACT public RANDOM_WORKER;
 
     //Setup ECIO Token Address
     function setupEcioToken(address ecioTokenAddr) public onlyOwner {
@@ -80,10 +97,17 @@ contract NeuronLab is Ownable {
     }
 
     //Setup NFTcore address
-    function setupRandomCa(IRANDOM randomCa) public onlyOwner {
-        RANDOM_CA = randomCa;
+    function setupRandomCa(ISUCCSRATE randomCa) public onlyOwner {
+        SUCCESSRATE = randomCa;
     }
 
+    //Setup RandomWorker address
+    function setupRandomWorker(RANDOM_CONTRACT randomWorkerContract)
+        public
+        onlyOwner
+    {
+        RANDOM_WORKER = randomWorkerContract;
+    }
 
     //Setup NFTcore address
     function setupRate(uint256 newRate) public onlyOwner {
@@ -142,7 +166,28 @@ contract NeuronLab is Ownable {
         string[] memory splittedPartCodes = splitPartCode(partCode);
         string memory starCode = splittedPartCodes[PC_STAR];
 
-        return (starCode);
+        return starCode;
+    }
+
+    //Convert from string to uint16
+    function convertStarToUint(string memory starPart)
+        public
+        pure
+        returns (uint16 stars)
+    {
+        if (compareStrings(starPart, ZERO_STAR) == true) {
+            return ZEO_STAR_UINT;
+        } else if (compareStrings(starPart, ONE_STAR) == true) {
+            return ONE_STAR_UINT;
+        } else if (compareStrings(starPart, TWO_STAR) == true) {
+            return TWO_STAR_UINT;
+        } else if (compareStrings(starPart, THREE_STAR) == true) {
+            return THREE_STAR_UINT;
+        } else if (compareStrings(starPart, FOUR_STAR) == true) {
+            return FOUR_STAR_UINT;
+        }
+
+        return ZEO_STAR_UINT; // need fix
     }
 
     //Split partcode for each part
@@ -203,6 +248,22 @@ contract NeuronLab is Ownable {
         return concatedCode;
     }
 
+    function getNumberAndMod(
+        uint256 _ranNum,
+        uint16 digit,
+        uint16 mod
+    ) public view virtual returns (uint16) {
+        if (digit == 1) {
+            return uint16((_ranNum % 10000) % mod);
+        } else if (digit == 2) {
+            return uint16(((_ranNum % 100000000) / 10000) % mod);
+        } else if (digit == 3) {
+            return uint16(((_ranNum % 1000000000000) / 100000000) % mod);
+        }
+
+        return 0;
+    }
+
     //Get Card id and then burn them and mint a new one
     function gatherMaterials(uint256[] memory tokenIds, uint256 mainCardTokenId)
         external
@@ -217,13 +278,28 @@ contract NeuronLab is Ownable {
         string memory mainCardGenom = splitGenom(mainCardPart);
         uint32 mainCardRarity = checkUserGenomRarity(mainCardGenom);
 
-        burnAndCheckToken(mainCardRarity, tokenIds);
-
-        //get to know main part code star
+        //get main part code star
         string memory mainCardStar = splitPartcodeStar(mainCardPart);
+        uint16 starConverted = convertStarToUint(mainCardStar);
 
-        upgradeSW(mainCardStar, mainCardPart);
+        uint256 _randomNumber = RANDOM_CONTRACT(RANDOM_WORKER).startRandom(); // NEEDCHECK
+        uint16 starId = getNumberAndMod(_randomNumber, 3, 1000); // NEEDCHECK
+
+        // get success rate
+        uint16 randomResult = SUCCESSRATE.getSuccessRate(
+            starConverted,
+            uint16(tokenIds.length),
+            starId
+        ); // NEEDCHECK
+
+        if (randomResult == SUCCEEDED) {
+            burnAndCheckToken(mainCardRarity, tokenIds);
+            upgradeSW(mainCardStar, mainCardPart);
+        } else if (randomResult == FAILED) {
+            burnAndCheckToken(mainCardRarity, tokenIds);
+        }
     }
+
 
     function burnAndCheckToken(uint32 mainCardRarity, uint256[] memory tokenIds)
         internal
